@@ -5,7 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Map;
 
 @ApplicationScoped
-public class StubLookupService implements BinLookupService {
+public class StubBinLookupService implements BinLookupService {
 
     private static final Map<String, BinInfo> BINS = Map.of(
             "411111", new BinInfo("USA", false),
