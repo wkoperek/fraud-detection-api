@@ -1,8 +1,9 @@
-package com.koperek.risk;
+package com.koperek.risk.rules;
 
 import com.koperek.bin.BinInfo;
 import com.koperek.bin.BinLookupResult;
-import com.koperek.risk.rules.CountryMismatchRule;
+import com.koperek.risk.RuleResult;
+import com.koperek.risk.Transaction;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
