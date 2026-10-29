@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HighAmountRuleTest {
-    public static final String COUNTRY_CODE_PL = "PL";
+    private static final String COUNTRY_CODE_PL = "PL";
     private final HighAmountRule rule = new HighAmountRule(new BigDecimal("1000"), new BigDecimal("5000"));
 
     @ParameterizedTest
