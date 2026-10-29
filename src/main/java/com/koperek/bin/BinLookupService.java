@@ -1,5 +1,5 @@
 package com.koperek.bin;
 
-interface BinLookupService {
-    BinLookupResult lookUp(String bin);
+public interface BinLookupService {
+    BinLookupResult lookup(String bin);
 }

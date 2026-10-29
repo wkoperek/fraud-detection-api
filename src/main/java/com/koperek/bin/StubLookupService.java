@@ -15,7 +15,7 @@ public class StubLookupService implements BinLookupService {
 
 
     @Override
-    public BinLookupResult lookUp(String bin) {
+    public BinLookupResult lookup(String bin) {
         BinInfo binInfo = BINS.get(bin);
         if (binInfo == null) {
             return new BinLookupResult.NotFound();
