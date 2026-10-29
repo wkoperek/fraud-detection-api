@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class BinNotVerifiedRuleTest {
     private static final String COUNTRY_CODE_PL = "PL";
     private static final String COUNTRY_ALPHA_3_USA = "USA";
-    private BinNotVerifiedRule binNotVerifiedRule = new BinNotVerifiedRule();
+    private final BinNotVerifiedRule binNotVerifiedRule = new BinNotVerifiedRule();
 
     @Test
     void returnsTwoPointsWhenBinNotFound() {
