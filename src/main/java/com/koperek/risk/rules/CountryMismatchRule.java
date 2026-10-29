@@ -5,10 +5,12 @@ import com.koperek.bin.BinLookupResult;
 import com.koperek.risk.RiskRule;
 import com.koperek.risk.RuleResult;
 import com.koperek.risk.Transaction;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.Locale;
 import java.util.Optional;
 
+@ApplicationScoped
 public final class CountryMismatchRule implements RiskRule {
     public static final String NAME = "COUNTRY_MISMATCH";
     private static final int POINTS = 2;

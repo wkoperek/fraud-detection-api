@@ -4,9 +4,11 @@ import com.koperek.bin.BinLookupResult;
 import com.koperek.risk.RiskRule;
 import com.koperek.risk.RuleResult;
 import com.koperek.risk.Transaction;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.Optional;
 
+@ApplicationScoped
 public final class BinNotVerifiedRule implements RiskRule {
     public static final String NAME = "BIN_NOT_VERIFIED";
     private static final int POINTS = 2;

@@ -5,9 +5,11 @@ import com.koperek.bin.BinLookupResult;
 import com.koperek.risk.RiskRule;
 import com.koperek.risk.RuleResult;
 import com.koperek.risk.Transaction;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.Optional;
 
+@ApplicationScoped
 public final class PrepaidCardRule implements RiskRule {
     public static final String NAME = "PREPAID_CARD";
     private static final int POINTS = 1;

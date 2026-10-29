@@ -1,7 +1,10 @@
 package com.koperek.risk;
 
+import jakarta.enterprise.context.ApplicationScoped;
+
 import java.util.List;
 
+@ApplicationScoped
 public class RiskScorer {
 
     public RiskLevel score(List<RuleResult> ruleResults) {
