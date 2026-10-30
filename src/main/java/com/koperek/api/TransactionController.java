@@ -3,6 +3,7 @@ package com.koperek.api;
 import com.koperek.risk.RiskAssessment;
 import com.koperek.risk.RiskAssessmentService;
 import com.koperek.risk.Transaction;
+import io.quarkus.security.Authenticated;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.Consumes;
@@ -14,6 +15,7 @@ import jakarta.ws.rs.core.MediaType;
 @Path("/transactions")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+@Authenticated
 public class TransactionController {
     private final RiskAssessmentService riskAssessmentService;
 

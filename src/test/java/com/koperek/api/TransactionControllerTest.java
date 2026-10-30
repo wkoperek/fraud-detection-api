@@ -1,9 +1,11 @@
 package com.koperek.api;
 
 import com.koperek.risk.RiskLevel;
+import com.koperek.security.TestTokens;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
@@ -56,7 +58,7 @@ class TransactionControllerTest {
         String body = CORRECT_REQ_BODY_JSON;
 
         // when
-        Response response = given().contentType(ContentType.JSON).body(body).post(TRANSACTIONS_ENDPOINT_PATH);
+        Response response = authorizedJsonRequest().body(body).post(TRANSACTIONS_ENDPOINT_PATH);
 
         // then
         assertEquals(Status.OK.getStatusCode(), response.statusCode(), response::asString);
@@ -71,7 +73,7 @@ class TransactionControllerTest {
         String body = TOO_SHORT_BIN_REQ_BODY_EXAMPLE;
 
         // when
-        Response response = given().contentType(ContentType.JSON).body(body).post(TRANSACTIONS_ENDPOINT_PATH);
+        Response response = authorizedJsonRequest().body(body).post(TRANSACTIONS_ENDPOINT_PATH);
 
         // then
         assertEquals(Status.BAD_REQUEST.getStatusCode(), response.statusCode(), response::asString);
@@ -86,7 +88,7 @@ class TransactionControllerTest {
         String body = NEGATIVE_AMOUNT_REQ_BODY_EXAMPLE;
 
         // when
-        Response response = given().contentType(ContentType.JSON).body(body).post(TRANSACTIONS_ENDPOINT_PATH);
+        Response response = authorizedJsonRequest().body(body).post(TRANSACTIONS_ENDPOINT_PATH);
 
         // then
         assertEquals(Status.BAD_REQUEST.getStatusCode(), response.statusCode(), response::asString);
@@ -101,7 +103,7 @@ class TransactionControllerTest {
         String body = MISSING_COUNTRY_CODE_REQ_BODY_EXAMPLE;
 
         // when
-        Response response = given().contentType(ContentType.JSON).body(body).post(TRANSACTIONS_ENDPOINT_PATH);
+        Response response = authorizedJsonRequest().body(body).post(TRANSACTIONS_ENDPOINT_PATH);
 
         // then
         assertEquals(Status.BAD_REQUEST.getStatusCode(), response.statusCode(), response::asString);
@@ -116,7 +118,7 @@ class TransactionControllerTest {
         String body = UNKNOWN_COUNTRY_CODE_REQ_BODY_EXAMPLE;
 
         // when
-        Response response = given().contentType(ContentType.JSON).body(body).post(TRANSACTIONS_ENDPOINT_PATH);
+        Response response = authorizedJsonRequest().body(body).post(TRANSACTIONS_ENDPOINT_PATH);
 
         // then
         assertEquals(Status.BAD_REQUEST.getStatusCode(), response.statusCode(), response::asString);
@@ -131,7 +133,7 @@ class TransactionControllerTest {
         String body = MALFORMED_REQ_BODY_JSON;
 
         // when
-        Response response = given().contentType(ContentType.JSON).body(body).post(TRANSACTIONS_ENDPOINT_PATH);
+        Response response = authorizedJsonRequest().body(body).post(TRANSACTIONS_ENDPOINT_PATH);
 
         // then
         assertEquals(Status.BAD_REQUEST.getStatusCode(), response.statusCode(), response::asString);
@@ -146,7 +148,7 @@ class TransactionControllerTest {
         String body = WRONG_TYPE_REQ_BODY_JSON;
 
         // when
-        Response response = given().contentType(ContentType.JSON).body(body).post(TRANSACTIONS_ENDPOINT_PATH);
+        Response response = authorizedJsonRequest().body(body).post(TRANSACTIONS_ENDPOINT_PATH);
 
         // then
         assertEquals(Status.BAD_REQUEST.getStatusCode(), response.statusCode(), response::asString);
@@ -161,7 +163,7 @@ class TransactionControllerTest {
         String body = "";
 
         // when
-        Response response = given().contentType(ContentType.JSON).body(body).post(TRANSACTIONS_ENDPOINT_PATH);
+        Response response = authorizedJsonRequest().body(body).post(TRANSACTIONS_ENDPOINT_PATH);
 
         // then
         assertEquals(Status.BAD_REQUEST.getStatusCode(), response.statusCode(), response::asString);
@@ -229,5 +231,9 @@ class TransactionControllerTest {
         assertEquals(INTERNAL_ERROR_CODE, error.error());
         assertEquals(INTERNAL_SERVER_ERROR_MSG, error.message());
         assertFalse(response.asString().contains(FAILING_CONTROLLER_TEST_RESPONSE_ERROR));
+    }
+
+    private static RequestSpecification authorizedJsonRequest() {
+        return given().auth().oauth2(TestTokens.valid()).contentType(ContentType.JSON);
     }
 }
