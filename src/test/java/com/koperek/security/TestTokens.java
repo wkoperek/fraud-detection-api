@@ -19,9 +19,18 @@ public final class TestTokens {
     private static final String DEMO_CLIENT = "demo-client";
     private static final String PRIVATE_KEY_LOCATION = "privateKey.pem";
     private static final Duration VALID_LIFETIME = Duration.ofMinutes(5);
+    private static final Duration DEMO_LIFETIME = Duration.ofDays(365);
     private static final int RSA_KEY_SIZE = 2048;
 
     private TestTokens() {
+    }
+
+    public static String demo() {
+        return validClaims().expiresIn(DEMO_LIFETIME).sign(privateKey());
+    }
+
+    public static void main(String[] args) {
+        System.out.println(demo());
     }
 
     public static String valid() {
