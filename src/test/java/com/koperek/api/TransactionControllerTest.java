@@ -50,6 +50,8 @@ class TransactionControllerTest {
     private static final String INTERNAL_ERROR_CODE = "INTERNAL_ERROR";
     private static final String INTERNAL_SERVER_ERROR_MSG = "Internal server error";
     private static final String FAILING_CONTROLLER_TEST_RESPONSE_ERROR = "boom";
+    private static final String COUNTRY_MISMATCH_RULE = "COUNTRY_MISMATCH";
+    private static final String HIGH_AMOUNT_RULE = "HIGH_AMOUNT";
 
 
     @Test
@@ -64,7 +66,7 @@ class TransactionControllerTest {
         assertEquals(Status.OK.getStatusCode(), response.statusCode(), response::asString);
         TransactionResponse result = response.as(TransactionResponse.class);
         assertEquals(RiskLevel.HIGH.score(), result.riskScore());
-        assertEquals(HIGH_RISK_LEVEL, result.riskLevel());
+        assertEquals(List.of(COUNTRY_MISMATCH_RULE, HIGH_AMOUNT_RULE), result.triggeredRules().stream().map(TriggeredRule::rule).toList());
     }
 
     @Test
