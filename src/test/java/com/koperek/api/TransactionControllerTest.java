@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import jakarta.ws.rs.core.Response.Status;
 
@@ -43,6 +44,10 @@ class TransactionControllerTest {
     private static final String METHOD_NOT_ALLOWED_ERROR_MSG = "Method Not Allowed";
     private static final String UNSUPPORTED_MEDIA_TYPE_ERROR_CODE = "UNSUPPORTED_MEDIA_TYPE";
     private static final String UNSUPPORTED_MEDIA_TYPE_ERROR_MSG = "Unsupported Media Type";
+    private static final String FAILING_ENDPOINT_PATH = "/test/fail";
+    private static final String INTERNAL_ERROR_CODE = "INTERNAL_ERROR";
+    private static final String INTERNAL_SERVER_ERROR_MSG = "Internal server error";
+    private static final String FAILING_CONTROLLER_TEST_RESPONSE_ERROR = "boom";
 
 
     @Test
@@ -208,5 +213,21 @@ class TransactionControllerTest {
         ErrorResponse error = response.as(ErrorResponse.class);
         assertEquals(NOT_FOUND_ERROR_CODE, error.error());
         assertEquals(NOT_FOUND_ERROR_MSG, error.message());
+    }
+
+    @Test
+    void returnsInternalServerErrorWithoutLeakingDetails() {
+        // given
+        String path = FAILING_ENDPOINT_PATH;
+
+        // when
+        Response response = given().get(path);
+
+        // then
+        assertEquals(Status.INTERNAL_SERVER_ERROR.getStatusCode(), response.statusCode(), response::asString);
+        ErrorResponse error = response.as(ErrorResponse.class);
+        assertEquals(INTERNAL_ERROR_CODE, error.error());
+        assertEquals(INTERNAL_SERVER_ERROR_MSG, error.message());
+        assertFalse(response.asString().contains(FAILING_CONTROLLER_TEST_RESPONSE_ERROR));
     }
 }
