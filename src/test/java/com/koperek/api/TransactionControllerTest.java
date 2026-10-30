@@ -19,12 +19,30 @@ class TransactionControllerTest {
     private static final String HIGH_RISK_LEVEL = "HIGH";
     private static final String VALIDATION_FAILED = "VALIDATION_FAILED";
     private static final String BIN_FIELD_NAME = "bin";
+    private static final String UNKNOWN_ENDPOINT_PATH = "/unknown";
+    private static final String NOT_FOUND_ERROR_CODE = "NOT_FOUND";
+    private static final String NOT_FOUND_ERROR_MSG = "Not Found";
     private static final String BIN_PATTERN_VIOLATION_MSG = "must match \"^\\d{6,8}$\"";
     private static final String CORRECT_REQ_BODY_JSON = "{\"bin\":\"411111\",\"amount\":1500.00,\"countryCode\":\"PL\"}";
     private static final String TOO_SHORT_BIN_REQ_BODY_EXAMPLE = "{\"bin\":\"12345\",\"amount\":1500.00,\"countryCode\":\"PL\"}";
     private static final String NEGATIVE_AMOUNT_REQ_BODY_EXAMPLE = "{\"bin\":\"411111\",\"amount\":-1500.00,\"countryCode\":\"PL\"}";
+    private static final String MISSING_COUNTRY_CODE_REQ_BODY_EXAMPLE = "{\"bin\":\"411111\",\"amount\":1500.00}";
+    private static final String UNKNOWN_COUNTRY_CODE_REQ_BODY_EXAMPLE = "{\"bin\":\"411111\",\"amount\":1500.00,\"countryCode\":\"ZZ\"}";
+    private static final String MALFORMED_REQ_BODY_JSON = "{\"bin\":\"411111\",\"amount\":1500.00";
     private static final String AMOUNT_FIELD_NAME = "amount";
     private static final String MUST_BE_GREATER_THAN_0_VIOLATION_MSG = "must be greater than 0";
+    private static final String COUNTRY_CODE_FIELD_NAME = "countryCode";
+    private static final String MUST_NOT_BE_BLANK_ERROR_MSG = "must not be blank";
+    private static final String ISO_3166_1_ALPHA_2_COUNTRY_CODE_ERROR_MSG = "Must be a valid ISO 3166-1 alpha-2 country code";
+    private static final String MALFORMED_REQUEST_ERROR_CODE = "MALFORMED_REQUEST";
+    private static final String REQUEST_BODY_IS_MALFORMED_ERROR_MSG = "Request body is malformed";
+    private static final String WRONG_TYPE_REQ_BODY_JSON = "{\"bin\":\"411111\",\"amount\":\"abc\",\"countryCode\":\"PL\"}";
+    private static final String REQUEST_FIELD_NAME = "request";
+    private static final String MUST_NOT_BE_NULL_ERROR_MSG = "must not be null";
+    private static final String METHOD_NOT_ALLOWED_ERROR_CODE = "METHOD_NOT_ALLOWED";
+    private static final String METHOD_NOT_ALLOWED_ERROR_MSG = "Method Not Allowed";
+    private static final String UNSUPPORTED_MEDIA_TYPE_ERROR_CODE = "UNSUPPORTED_MEDIA_TYPE";
+    private static final String UNSUPPORTED_MEDIA_TYPE_ERROR_MSG = "Unsupported Media Type";
 
 
     @Test
@@ -70,5 +88,125 @@ class TransactionControllerTest {
         ErrorResponse error = response.as(ErrorResponse.class);
         assertEquals(VALIDATION_FAILED, error.error());
         assertEquals(List.of(new ErrorResponse.Violation(AMOUNT_FIELD_NAME, MUST_BE_GREATER_THAN_0_VIOLATION_MSG)), error.violations());
+    }
+
+    @Test
+    void returnsBadRequestForMissingCountryCode() {
+        // given
+        String body = MISSING_COUNTRY_CODE_REQ_BODY_EXAMPLE;
+
+        // when
+        Response response = given().contentType(ContentType.JSON).body(body).post(TRANSACTIONS_ENDPOINT_PATH);
+
+        // then
+        assertEquals(Status.BAD_REQUEST.getStatusCode(), response.statusCode(), response::asString);
+        ErrorResponse error = response.as(ErrorResponse.class);
+        assertEquals(VALIDATION_FAILED, error.error());
+        assertEquals(List.of(new ErrorResponse.Violation(COUNTRY_CODE_FIELD_NAME, MUST_NOT_BE_BLANK_ERROR_MSG)), error.violations());
+    }
+
+    @Test
+    void returnsBadRequestForUnknownCountryCode() {
+        // given
+        String body = UNKNOWN_COUNTRY_CODE_REQ_BODY_EXAMPLE;
+
+        // when
+        Response response = given().contentType(ContentType.JSON).body(body).post(TRANSACTIONS_ENDPOINT_PATH);
+
+        // then
+        assertEquals(Status.BAD_REQUEST.getStatusCode(), response.statusCode(), response::asString);
+        ErrorResponse error = response.as(ErrorResponse.class);
+        assertEquals(VALIDATION_FAILED, error.error());
+        assertEquals(List.of(new ErrorResponse.Violation(COUNTRY_CODE_FIELD_NAME, ISO_3166_1_ALPHA_2_COUNTRY_CODE_ERROR_MSG)), error.violations());
+    }
+
+    @Test
+    void returnsBadRequestForMalformedJson() {
+        // given
+        String body = MALFORMED_REQ_BODY_JSON;
+
+        // when
+        Response response = given().contentType(ContentType.JSON).body(body).post(TRANSACTIONS_ENDPOINT_PATH);
+
+        // then
+        assertEquals(Status.BAD_REQUEST.getStatusCode(), response.statusCode(), response::asString);
+        ErrorResponse error = response.as(ErrorResponse.class);
+        assertEquals(MALFORMED_REQUEST_ERROR_CODE, error.error());
+        assertEquals(REQUEST_BODY_IS_MALFORMED_ERROR_MSG, error.message());
+    }
+
+    @Test
+    void returnsBadRequestForWrongAmountType() {
+        // given
+        String body = WRONG_TYPE_REQ_BODY_JSON;
+
+        // when
+        Response response = given().contentType(ContentType.JSON).body(body).post(TRANSACTIONS_ENDPOINT_PATH);
+
+        // then
+        assertEquals(Status.BAD_REQUEST.getStatusCode(), response.statusCode(), response::asString);
+        ErrorResponse error = response.as(ErrorResponse.class);
+        assertEquals(MALFORMED_REQUEST_ERROR_CODE, error.error());
+        assertEquals(REQUEST_BODY_IS_MALFORMED_ERROR_MSG, error.message());
+    }
+
+    @Test
+    void returnsBadRequestForEmptyBody() {
+        // given
+        String body = "";
+
+        // when
+        Response response = given().contentType(ContentType.JSON).body(body).post(TRANSACTIONS_ENDPOINT_PATH);
+
+        // then
+        assertEquals(Status.BAD_REQUEST.getStatusCode(), response.statusCode(), response::asString);
+        ErrorResponse error = response.as(ErrorResponse.class);
+        assertEquals(VALIDATION_FAILED, error.error());
+        assertEquals(List.of(new ErrorResponse.Violation(REQUEST_FIELD_NAME, MUST_NOT_BE_NULL_ERROR_MSG)), error.violations());
+    }
+
+    @Test
+    void returnsMethodNotAllowedForGet() {
+        // given
+        String path = TRANSACTIONS_ENDPOINT_PATH;
+
+        // when
+        Response response = given().get(path);
+
+        // then
+        assertEquals(Status.METHOD_NOT_ALLOWED.getStatusCode(), response.statusCode(), response::asString);
+        ErrorResponse error = response.as(ErrorResponse.class);
+        assertEquals(METHOD_NOT_ALLOWED_ERROR_CODE, error.error());
+        assertEquals(METHOD_NOT_ALLOWED_ERROR_MSG, error.message());
+    }
+
+    @Test
+    void returnsUnsupportedMediaTypeForTextPlain() {
+        // given
+        String body = CORRECT_REQ_BODY_JSON;
+
+        // when
+        Response response = given().contentType(ContentType.TEXT).body(body).post(TRANSACTIONS_ENDPOINT_PATH);
+
+        // then
+        assertEquals(Status.UNSUPPORTED_MEDIA_TYPE.getStatusCode(), response.statusCode(), response::asString);
+        ErrorResponse error = response.as(ErrorResponse.class);
+        assertEquals(UNSUPPORTED_MEDIA_TYPE_ERROR_CODE, error.error());
+        assertEquals(UNSUPPORTED_MEDIA_TYPE_ERROR_MSG, error.message());
+    }
+
+    @Test
+    void returnsNotFoundForUnknownPath() {
+        // given
+        String path = UNKNOWN_ENDPOINT_PATH;
+
+        // when
+        Response response = given().get(path);
+
+        // then
+        assertEquals(Status.NOT_FOUND.getStatusCode(), response.statusCode(), response::asString);
+        ErrorResponse error = response.as(ErrorResponse.class);
+        assertEquals(NOT_FOUND_ERROR_CODE, error.error());
+        assertEquals(NOT_FOUND_ERROR_MSG, error.message());
     }
 }
