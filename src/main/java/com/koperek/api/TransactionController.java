@@ -13,10 +13,10 @@ import jakarta.ws.rs.core.MediaType;
 @Path("/transactions")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-public class TransactionResource {
+public class TransactionController {
     private final RiskAssessmentService riskAssessmentService;
 
-    public TransactionResource(RiskAssessmentService riskAssessmentService) {
+    public TransactionController(RiskAssessmentService riskAssessmentService) {
         this.riskAssessmentService = riskAssessmentService;
     }
 

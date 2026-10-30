@@ -21,8 +21,8 @@ public class ApiExceptionMappers {
     private static final char PROPERTY_PATH_SEPARATOR = '.';
     private static final char FLOOR_CHAR = '_';
     private static final char SEPARATOR_CHAR = ' ';
-    public static final String ITERNAL_ERROR_MSG_CODE = "ITERNAL_ERROR";
-    public static final String INTERNAL_SERVER_ERROR_MSG = "Internal server error";
+    private static final String INTERNAL_ERROR_MSG_CODE = "INTERNAL_ERROR";
+    private static final String INTERNAL_SERVER_ERROR_MSG = "Internal server error";
 
     @ServerExceptionMapper
     public RestResponse<ErrorResponse> handleViolation(ConstraintViolationException exception) {
@@ -56,7 +56,7 @@ public class ApiExceptionMappers {
     @ServerExceptionMapper
     public RestResponse<ErrorResponse> handleUnexpected(Exception exception) {
         Log.error("Unexpected error", exception);
-        ErrorResponse errorResponse = new ErrorResponse(ITERNAL_ERROR_MSG_CODE, INTERNAL_SERVER_ERROR_MSG, null, null);
+        ErrorResponse errorResponse = new ErrorResponse(INTERNAL_ERROR_MSG_CODE, INTERNAL_SERVER_ERROR_MSG, null, null);
         return RestResponse.status(Response.Status.INTERNAL_SERVER_ERROR, errorResponse);
     }
 
