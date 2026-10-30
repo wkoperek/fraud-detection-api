@@ -3,6 +3,7 @@ package com.koperek.security;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import jakarta.ws.rs.core.Response.Status;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
@@ -22,6 +23,19 @@ public class TransactionControllerAuthTest {
         Response response = given().contentType(ContentType.JSON).body(body).post(TRANSACTIONS_ENDPOINT_PATH);
 
         // then
-        assertEquals(jakarta.ws.rs.core.Response.Status.UNAUTHORIZED.getStatusCode(), response.statusCode(), response::asString);
+        assertEquals(Status.UNAUTHORIZED.getStatusCode(), response.statusCode(), response::asString);
+    }
+
+    @Test
+    void returnsUnauthorizedForTokenSignedWithOtherKey() {
+        // given
+        String body = CORRECT_REQ_BODY_JSON;
+        String token = TestTokens.signedWithOtherKey();
+
+        // when
+        Response response = given().auth().oauth2(token).contentType(ContentType.JSON).body(body).post(TRANSACTIONS_ENDPOINT_PATH);
+
+        // then
+        assertEquals(Status.UNAUTHORIZED.getStatusCode(), response.statusCode(), response::asString);
     }
 }
