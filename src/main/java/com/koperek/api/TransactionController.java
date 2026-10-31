@@ -18,15 +18,17 @@ import jakarta.ws.rs.core.MediaType;
 @Authenticated
 public class TransactionController {
     private final RiskAssessmentService riskAssessmentService;
+    private final CurrentRequestId currentRequestId;
 
-    public TransactionController(RiskAssessmentService riskAssessmentService) {
+    public TransactionController(RiskAssessmentService riskAssessmentService, CurrentRequestId currentRequestId) {
         this.riskAssessmentService = riskAssessmentService;
+        this.currentRequestId = currentRequestId;
     }
 
     @POST
     public TransactionResponse assess(@Valid @NotNull TransactionRequest request) {
         Transaction transaction = TransactionMapper.toTransaction(request);
         RiskAssessment riskAssessment = riskAssessmentService.assess(transaction);
-        return TransactionMapper.toResponse(riskAssessment);
+        return TransactionMapper.toResponse(riskAssessment, currentRequestId.value());
     }
 }

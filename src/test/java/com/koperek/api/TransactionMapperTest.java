@@ -20,6 +20,7 @@ class TransactionMapperTest {
     private static final String COUNTRY_MISMATCH_REASON = "Card issued in USA, transaction in POL";
     private static final String HIGH_AMOUNT_REASON = "Amount 6000.00 is at least 5000";
     private static final String DELIMITER = "; ";
+    private static final String REQUEST_ID = "test-id";
 
     @Test
     void mapsRequestToTransactionWithUpperCaseCountryCode() {
@@ -39,7 +40,7 @@ class TransactionMapperTest {
         RiskAssessment assessment = new RiskAssessment(RiskLevel.VERY_LOW, List.of());
 
         // when
-        TransactionResponse response = TransactionMapper.toResponse(assessment);
+        TransactionResponse response = TransactionMapper.toResponse(assessment, REQUEST_ID);
 
         // then
         assertEquals(1, response.riskScore());
@@ -56,7 +57,7 @@ class TransactionMapperTest {
                 new RuleResult(HIGH_AMOUNT, 2, HIGH_AMOUNT_REASON)));
 
         // when
-        TransactionResponse response = TransactionMapper.toResponse(assessment);
+        TransactionResponse response = TransactionMapper.toResponse(assessment, REQUEST_ID);
 
         // then
         assertEquals(4, response.riskScore());

@@ -17,14 +17,13 @@ public final class TransactionMapper {
         return new Transaction(request.bin(), request.amount(), request.countryCode().toUpperCase());
     }
 
-    public static TransactionResponse toResponse(RiskAssessment assessment) {
+    public static TransactionResponse toResponse(RiskAssessment assessment, String requestId) {
         RiskLevel level = assessment.level();
         List<TriggeredRule> triggeredRules = assessment.triggeredRules().stream()
                 .map(result -> new TriggeredRule(result.rule(), result.points(), result.reason()))
                 .toList();
 
-        return new TransactionResponse(
-                level.score(), level.name(), assessmentText(level, assessment.triggeredRules()), triggeredRules);
+        return new TransactionResponse(level.score(), level.name(), assessmentText(level, assessment.triggeredRules()), triggeredRules, requestId);
     }
 
     private static String assessmentText(RiskLevel level, List<RuleResult> ruleResults) {
