@@ -11,7 +11,9 @@ import java.util.stream.Collectors;
 public final class TransactionMapper {
     private static final int MAX_SCORE = 5;
     private static final String NO_RISK_FACTORS_DETECTED_MESSAGE = "No risk factors detected";
+    public static final String SPACE = " ";
     private static final String DELIMITER = "; ";
+    private static final String DEGRADED_MESSAGE = "BIN data was unavailable; assessment is based on transaction data only.";
 
     public static Transaction toTransaction(TransactionRequest request) {
         return new Transaction(request.bin(), request.amount(), request.countryCode().toUpperCase());
@@ -23,16 +25,16 @@ public final class TransactionMapper {
                 .map(result -> new TriggeredRule(result.rule(), result.points(), result.reason()))
                 .toList();
 
-        return new TransactionResponse(level.score(), level.name(), assessmentText(level, assessment.triggeredRules()), triggeredRules, requestId);
+        return new TransactionResponse(level.score(), level.name(), assessmentText(level, assessment.triggeredRules(), assessment.degraded()), triggeredRules, requestId, assessment.degraded());
     }
 
-    private static String assessmentText(RiskLevel level, List<RuleResult> ruleResults) {
-        if (ruleResults.isEmpty()) {
-            return NO_RISK_FACTORS_DETECTED_MESSAGE;
-        }
+    private static String assessmentText(RiskLevel level, List<RuleResult> ruleResults, boolean degraded) {
+        String text = ruleResults.isEmpty() ? NO_RISK_FACTORS_DETECTED_MESSAGE : constructResultMessage(level, joinReasons(ruleResults));
+        return degraded ? text + SPACE + DEGRADED_MESSAGE : text;
+    }
 
-        String reasons = ruleResults.stream().map(RuleResult::reason).collect(Collectors.joining(DELIMITER));
-        return constructResultMessage(level, reasons);
+    private static String joinReasons(List<RuleResult> ruleResults) {
+        return ruleResults.stream().map(RuleResult::reason).collect(Collectors.joining(DELIMITER));
     }
 
     private static String constructResultMessage(RiskLevel level, String reasons) {

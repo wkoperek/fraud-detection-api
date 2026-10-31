@@ -7,10 +7,13 @@ import com.koperek.bin.BinInfo;
 import com.koperek.bin.BinLookupResult;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response.Status;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @ApplicationScoped
 public final class BinInfoFetcher {
@@ -26,14 +29,22 @@ public final class BinInfoFetcher {
     }
 
     public BinLookupResult fetch(String bin) {
-        String json = callMastercard(bin);
-        List<BinRange> binRanges = readBinRanges(json);
+        return fetchJson(bin)
+                .map(this::readBinRanges)
+                .filter(binRanges -> !binRanges.isEmpty())
+                .map(this::toFound)
+                .orElseGet(BinLookupResult.NotFound::new);
+    }
 
-        if (binRanges.isEmpty()) {
-            return new BinLookupResult.NotFound();
+    private Optional<String> fetchJson(String bin) {
+        try {
+            return Optional.of(callMastercard(bin));
+        } catch (WebApplicationException e) {
+            if (e.getResponse().getStatus() == Status.NOT_FOUND.getStatusCode()) {
+                return Optional.empty();
+            }
+            throw e;
         }
-
-        return toFound(binRanges);
     }
 
     private String callMastercard(String bin) {
@@ -62,7 +73,7 @@ public final class BinInfoFetcher {
             return objectMapper.readValue(json, new TypeReference<List<BinRange>>() {
             });
         } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Cannot parse bin ranges in Mastercard response", e);
+            throw new InvalidUpstreamResponseException("Cannot parse bin ranges in Mastercard response", e);
         }
     }
 

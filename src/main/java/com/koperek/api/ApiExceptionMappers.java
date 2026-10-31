@@ -1,6 +1,7 @@
 package com.koperek.api;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.koperek.bin.UpstreamRejectedException;
 import io.quarkus.logging.Log;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -20,6 +21,8 @@ public class ApiExceptionMappers {
     private static final String MALFORMED_REQUEST_MSG = "Request body is malformed";
     private static final String INTERNAL_ERROR_MSG_CODE = "INTERNAL_ERROR";
     private static final String INTERNAL_SERVER_ERROR_MSG = "Internal server error";
+    private static final String UPSTREAM_REJECTED_MSG_CODE = "UPSTREAM_REJECTED";
+    private static final String UPSTREAM_REJECTED_MSG = "Upstream service rejected the request";
     private static final char PROPERTY_PATH_SEPARATOR = '.';
     private static final char FLOOR_CHAR = '_';
     private static final char SEPARATOR_CHAR = ' ';
@@ -64,6 +67,13 @@ public class ApiExceptionMappers {
         Log.error("Unexpected error", exception);
         ErrorResponse errorResponse = new ErrorResponse(INTERNAL_ERROR_MSG_CODE, INTERNAL_SERVER_ERROR_MSG, null, currentRequestId.value());
         return RestResponse.status(Response.Status.INTERNAL_SERVER_ERROR, errorResponse);
+    }
+
+    @ServerExceptionMapper
+    public RestResponse<ErrorResponse> handleUpstreamRejected(UpstreamRejectedException exception) {
+        Log.errorf(exception, "Upstream rejected the request, upstream status=%d", exception.upstreamStatus());
+        ErrorResponse errorResponse = new ErrorResponse(UPSTREAM_REJECTED_MSG_CODE, UPSTREAM_REJECTED_MSG, null, currentRequestId.value());
+        return RestResponse.status(Response.Status.BAD_GATEWAY, errorResponse);
     }
 
     private RestResponse<ErrorResponse> malformedRequest() {

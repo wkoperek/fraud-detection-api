@@ -21,6 +21,7 @@ public final class PrepaidCardRule implements RiskRule {
         return switch (binLookupResult) {
             case BinLookupResult.Found(BinInfo binInfo) -> checkIfPrepaid(binInfo);
             case BinLookupResult.NotFound() -> Optional.empty();
+            case BinLookupResult.Unavailable() -> Optional.empty();
         };
     }
 

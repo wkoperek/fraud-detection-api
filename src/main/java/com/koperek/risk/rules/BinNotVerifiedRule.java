@@ -11,14 +11,17 @@ import java.util.Optional;
 @ApplicationScoped
 public final class BinNotVerifiedRule implements RiskRule {
     public static final String NAME = "BIN_NOT_VERIFIED";
+    private static final String UNAVAILABLE_REASON_MESSAGE = "BIN lookup unavailable";
     private static final int POINTS = 2;
 
     @Override
     public Optional<RuleResult> evaluate(Transaction transaction, BinLookupResult binLookupResult) {
 
-        return switch (binLookupResult){
-            case BinLookupResult.NotFound() -> Optional.of(new RuleResult(NAME, POINTS, constructReasonMessage(transaction)));
+        return switch (binLookupResult) {
+            case BinLookupResult.NotFound() ->
+                    Optional.of(new RuleResult(NAME, POINTS, constructReasonMessage(transaction)));
             case BinLookupResult.Found ignored -> Optional.empty();
+            case BinLookupResult.Unavailable() -> Optional.of(new RuleResult(NAME, POINTS, UNAVAILABLE_REASON_MESSAGE));
         };
     }
 

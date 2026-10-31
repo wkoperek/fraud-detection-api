@@ -21,6 +21,8 @@ class TransactionMapperTest {
     private static final String HIGH_AMOUNT_REASON = "Amount 6000.00 is at least 5000";
     private static final String DELIMITER = "; ";
     private static final String REQUEST_ID = "test-id";
+    private static final String BIN_NOT_VERIFIED_RULE_CODE = "BIN_NOT_VERIFIED";
+    private static final String BIN_LOOKUP_UNAVAILABLE_MESSAGE = "BIN lookup unavailable";
 
     @Test
     void mapsRequestToTransactionWithUpperCaseCountryCode() {
@@ -37,7 +39,7 @@ class TransactionMapperTest {
     @Test
     void describesAbsenceOfRiskFactorsWhenNoRuleTriggered() {
         // given
-        RiskAssessment assessment = new RiskAssessment(RiskLevel.VERY_LOW, List.of());
+        RiskAssessment assessment = new RiskAssessment(RiskLevel.VERY_LOW, List.of(), false);
 
         // when
         TransactionResponse response = TransactionMapper.toResponse(assessment, REQUEST_ID);
@@ -54,7 +56,7 @@ class TransactionMapperTest {
         // given
         RiskAssessment assessment = new RiskAssessment(RiskLevel.HIGH, List.of(
                 new RuleResult(COUNTRY_MISMATCH, 2, COUNTRY_MISMATCH_REASON),
-                new RuleResult(HIGH_AMOUNT, 2, HIGH_AMOUNT_REASON)));
+                new RuleResult(HIGH_AMOUNT, 2, HIGH_AMOUNT_REASON)), false);
 
         // when
         TransactionResponse response = TransactionMapper.toResponse(assessment, REQUEST_ID);
@@ -67,5 +69,18 @@ class TransactionMapperTest {
         assertEquals(List.of(
                 new TriggeredRule(COUNTRY_MISMATCH, 2, COUNTRY_MISMATCH_REASON),
                 new TriggeredRule(HIGH_AMOUNT, 2, HIGH_AMOUNT_REASON)), response.triggeredRules());
+    }
+
+    @Test
+    void addsDegradedNoteAndFlagWhenBinDataUnavailable() {
+        // given
+        RiskAssessment assessment = new RiskAssessment(RiskLevel.MEDIUM, List.of(new RuleResult(BIN_NOT_VERIFIED_RULE_CODE, 2, BIN_LOOKUP_UNAVAILABLE_MESSAGE)), true);
+
+        // when
+        TransactionResponse response = TransactionMapper.toResponse(assessment, REQUEST_ID);
+
+        // then
+        assertTrue(response.degraded());
+        assertEquals("Risk level MEDIUM (3/5). BIN lookup unavailable BIN data was unavailable; assessment is based on transaction data only.", response.assessment());
     }
 }

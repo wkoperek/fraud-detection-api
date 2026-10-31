@@ -20,6 +20,7 @@ public final class CountryMismatchRule implements RiskRule {
         return switch (binLookupResult) {
             case BinLookupResult.Found(BinInfo binInfo) -> check(transaction, binInfo);
             case BinLookupResult.NotFound() -> Optional.empty();
+            case BinLookupResult.Unavailable() -> Optional.empty();
         };
     }
 

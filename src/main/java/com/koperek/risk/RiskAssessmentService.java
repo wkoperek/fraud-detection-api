@@ -16,6 +16,7 @@ public class RiskAssessmentService {
     private static final String COMMA_DELIMITER = ",";
     private static final String FOUND = "found";
     private static final String NOT_FOUND = "not_found";
+    private static final String UNAVAILABLE = "unavailable";
 
     private final List<RiskRule> rules;
     private final BinLookupService binLookupService;
@@ -27,15 +28,11 @@ public class RiskAssessmentService {
         this.scorer = scorer;
     }
 
-    public RiskAssessment assess(Transaction transaction) {
-        Log.debugf("assess bin=%s countryCode=%s amount=%s", transaction.bin(), transaction.countryCode(), transaction.amount());
-
-        BinLookupResult binLookupResult = binLookupService.lookup(transaction.bin());
-        List<RuleResult> triggeredRules = evaluateRules(transaction, binLookupResult);
-        RiskLevel level = scorer.score(triggeredRules);
-
-        logAssessment(binLookupResult, level, triggeredRules);
-        return new RiskAssessment(level, triggeredRules);
+    private static void logAssessment(BinLookupResult binLookupResult, RiskLevel level, List<RuleResult> triggeredRules, boolean degraded) {
+        int points = triggeredRules.stream().mapToInt(RuleResult::points).sum();
+        String ruleNames = triggeredRules.stream().map(RuleResult::rule).collect(Collectors.joining(COMMA_DELIMITER));
+        Log.infof("assessment lookup=%s level=%s points=%d rules=%s, degraded:%s",
+                lookupOutcome(binLookupResult), level, points, ruleNames, degraded);
     }
 
     private List<RuleResult> evaluateRules(Transaction transaction, BinLookupResult binLookupResult) {
@@ -46,17 +43,23 @@ public class RiskAssessmentService {
                 .toList();
     }
 
-    private static void logAssessment(BinLookupResult binLookupResult, RiskLevel level, List<RuleResult> triggeredRules) {
-        int points = triggeredRules.stream().mapToInt(RuleResult::points).sum();
-        String ruleNames = triggeredRules.stream().map(RuleResult::rule).collect(Collectors.joining(COMMA_DELIMITER));
-        Log.infof("assessment lookup=%s level=%s points=%d rules=%s",
-                lookupOutcome(binLookupResult), level, points, ruleNames);
-    }
-
     private static String lookupOutcome(BinLookupResult result) {
         return switch (result) {
             case BinLookupResult.Found found -> FOUND;
             case BinLookupResult.NotFound notFound -> NOT_FOUND;
+            case BinLookupResult.Unavailable unavailable -> UNAVAILABLE;
         };
+    }
+
+    public RiskAssessment assess(Transaction transaction) {
+        Log.debugf("assess bin=%s countryCode=%s amount=%s", transaction.bin(), transaction.countryCode(), transaction.amount());
+
+        BinLookupResult binLookupResult = binLookupService.lookup(transaction.bin());
+        List<RuleResult> triggeredRules = evaluateRules(transaction, binLookupResult);
+        RiskLevel level = scorer.score(triggeredRules);
+        boolean degraded = binLookupResult instanceof BinLookupResult.Unavailable;
+
+        logAssessment(binLookupResult, level, triggeredRules, degraded);
+        return new RiskAssessment(level, triggeredRules, degraded);
     }
 }
