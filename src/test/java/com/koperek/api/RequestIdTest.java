@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class RequestIdTest {
     private static final String TRANSACTIONS_ENDPOINT_PATH = "/transactions";
     private static final String CORRECT_REQ_BODY_JSON = "{\"bin\":\"411111\",\"amount\":1500.00,\"countryCode\":\"PL\"}";
+    private static final String TOO_SHORT_BIN_REQ_BODY_EXAMPLE = "{\"bin\":\"12345\",\"amount\":1500.00,\"countryCode\":\"PL\"}";
     private static final String REQUEST_ID_HEADER = "X-REQUESTID";
 
     @Test
@@ -29,8 +30,8 @@ class RequestIdTest {
 
         // then
         String headerId = response.header(REQUEST_ID_HEADER);
-        UUID.fromString(headerId); // if requestId from header was not generated UUID.fromString will fail
         assertEquals(Status.OK.getStatusCode(), response.statusCode());
+        UUID.fromString(headerId); // if requestId from header was not generated UUID.fromString will fail
         assertEquals(headerId, response.as(TransactionResponse.class).requestId());
     }
 
@@ -64,6 +65,21 @@ class RequestIdTest {
         // then
         assertEquals(Status.UNAUTHORIZED.getStatusCode(), response.statusCode());
         assertEquals(suppliedRequestId, response.header(REQUEST_ID_HEADER));
+    }
+
+    @Test
+    void includesRequestIdInErrorResponse() {
+        // given
+        String body = TOO_SHORT_BIN_REQ_BODY_EXAMPLE;
+        String suppliedRequestId = UUID.randomUUID().toString();
+
+        // when
+        Response response = authorizedJsonRequest().body(body).header(REQUEST_ID_HEADER, suppliedRequestId)
+                .post(TRANSACTIONS_ENDPOINT_PATH);
+
+        // then
+        assertEquals(Status.BAD_REQUEST.getStatusCode(), response.statusCode());
+        assertEquals(suppliedRequestId, response.as(ErrorResponse.class).requestId());
     }
 
     private static RequestSpecification authorizedJsonRequest() {
