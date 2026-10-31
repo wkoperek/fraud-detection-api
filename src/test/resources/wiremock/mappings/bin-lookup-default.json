@@ -1,0 +1,28 @@
+{
+  "priority": 10,
+  "request": {
+    "method": "POST",
+    "urlPath": "/bin-resources/bin-ranges/account-searches"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": [
+      {
+        "binNum": "411111",
+        "binLength": 6,
+        "acceptanceBrand": "MCC",
+        "customerName": "Test Bank",
+        "country": {
+          "code": 840,
+          "alpha3": "USA",
+          "name": "United States"
+        },
+        "productCode": "MCS",
+        "fundingSource": "DEBIT"
+      }
+    ]
+  }
+}

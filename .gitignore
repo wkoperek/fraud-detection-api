@@ -46,6 +46,7 @@ nb-configuration.xml
 
 # Secrets and local config (never commit)
 *.p12
+!src/test/resources/test-signing.p12
 .env
 .env.*
 
