@@ -1,6 +1,6 @@
-package com.koperek.risk;
+package com.koperek.risk.rules;
 
-import com.koperek.risk.rules.HighAmountRule;
+import com.koperek.risk.RiskConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 
