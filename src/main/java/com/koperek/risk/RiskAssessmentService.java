@@ -45,9 +45,9 @@ public class RiskAssessmentService {
 
     private static String lookupOutcome(BinLookupResult result) {
         return switch (result) {
-            case BinLookupResult.Found found -> FOUND;
-            case BinLookupResult.NotFound notFound -> NOT_FOUND;
-            case BinLookupResult.Unavailable unavailable -> UNAVAILABLE;
+            case BinLookupResult.Found ignored -> FOUND;
+            case BinLookupResult.NotFound ignored -> NOT_FOUND;
+            case BinLookupResult.Unavailable ignored -> UNAVAILABLE;
         };
     }
 

@@ -38,7 +38,7 @@ public final class BinInfoFetcher {
 
     private Optional<String> fetchJson(String bin) {
         try {
-            return Optional.of(callMastercard(bin));
+            return Optional.ofNullable(callMastercard(bin));
         } catch (WebApplicationException e) {
             if (e.getResponse().getStatus() == Status.NOT_FOUND.getStatusCode()) {
                 return Optional.empty();

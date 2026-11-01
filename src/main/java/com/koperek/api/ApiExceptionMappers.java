@@ -45,7 +45,7 @@ public class ApiExceptionMappers {
     }
 
     @ServerExceptionMapper
-    public RestResponse<ErrorResponse> handleConstraintViolation(JsonProcessingException exception) {
+    public RestResponse<ErrorResponse> handleMalformedRequest(JsonProcessingException exception) {
         return malformedRequest();
     }
 
