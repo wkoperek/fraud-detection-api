@@ -65,17 +65,13 @@ class BinLookupFailureIntegrationTest {
         wireMockServer.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(serverError()));
 
         // when
-        Response response = given().auth().oauth2(TestTokens.valid())
-                .contentType(ContentType.JSON)
-                .body(REQUEST_BODY)
-                .post(TRANSACTIONS_ENDPOINT_PATH);
+        Response response = postTransaction();
 
         // then
         assertEquals(Status.OK.getStatusCode(), response.statusCode(), response::asString);
         TransactionResponse result = response.as(TransactionResponse.class);
         assertTrue(result.degraded());
-        assertEquals(List.of(BIN_NOT_VERIFIED_TRIGGER_CODE, HIGH_AMOUNT_TRIGGER_CODE),
-                result.triggeredRules().stream().map(TriggeredRule::rule).toList());
+        assertEquals(List.of(BIN_NOT_VERIFIED_TRIGGER_CODE, HIGH_AMOUNT_TRIGGER_CODE), ruleCodes(result));
     }
 
     @Test
@@ -84,17 +80,13 @@ class BinLookupFailureIntegrationTest {
         wireMockServer.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(ok().withFixedDelay(1500)));
 
         // when
-        Response response = given().auth().oauth2(TestTokens.valid())
-                .contentType(ContentType.JSON)
-                .body(REQUEST_BODY)
-                .post(TRANSACTIONS_ENDPOINT_PATH);
+        Response response = postTransaction();
 
         // then
         assertEquals(Status.OK.getStatusCode(), response.statusCode(), response::asString);
         TransactionResponse result = response.as(TransactionResponse.class);
         assertTrue(result.degraded());
-        assertEquals(List.of(BIN_NOT_VERIFIED_TRIGGER_CODE, HIGH_AMOUNT_TRIGGER_CODE),
-                result.triggeredRules().stream().map(TriggeredRule::rule).toList());
+        assertEquals(List.of(BIN_NOT_VERIFIED_TRIGGER_CODE, HIGH_AMOUNT_TRIGGER_CODE), ruleCodes(result));
     }
 
     @Test
@@ -103,17 +95,13 @@ class BinLookupFailureIntegrationTest {
         wireMockServer.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(okJson("\"not-json\"")));
 
         // when
-        Response response = given().auth().oauth2(TestTokens.valid())
-                .contentType(ContentType.JSON)
-                .body(REQUEST_BODY)
-                .post(TRANSACTIONS_ENDPOINT_PATH);
+        Response response = postTransaction();
 
         // then
         assertEquals(Status.OK.getStatusCode(), response.statusCode(), response::asString);
         TransactionResponse result = response.as(TransactionResponse.class);
         assertTrue(result.degraded());
-        assertEquals(List.of(BIN_NOT_VERIFIED_TRIGGER_CODE, HIGH_AMOUNT_TRIGGER_CODE),
-                result.triggeredRules().stream().map(TriggeredRule::rule).toList());
+        assertEquals(List.of(BIN_NOT_VERIFIED_TRIGGER_CODE, HIGH_AMOUNT_TRIGGER_CODE), ruleCodes(result));
     }
 
     @Test
@@ -122,16 +110,12 @@ class BinLookupFailureIntegrationTest {
         wireMockServer.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(okJson("[]")));
 
         // when
-        Response response = given().auth().oauth2(TestTokens.valid())
-                .contentType(ContentType.JSON)
-                .body(REQUEST_BODY)
-                .post(TRANSACTIONS_ENDPOINT_PATH);
+        Response response = postTransaction();
         // then
         assertEquals(Status.OK.getStatusCode(), response.statusCode(), response::asString);
         TransactionResponse result = response.as(TransactionResponse.class);
         assertFalse(result.degraded());
-        assertEquals(List.of(BIN_NOT_VERIFIED_TRIGGER_CODE, HIGH_AMOUNT_TRIGGER_CODE),
-                result.triggeredRules().stream().map(TriggeredRule::rule).toList());
+        assertEquals(List.of(BIN_NOT_VERIFIED_TRIGGER_CODE, HIGH_AMOUNT_TRIGGER_CODE), ruleCodes(result));
     }
 
     @Test
@@ -140,17 +124,13 @@ class BinLookupFailureIntegrationTest {
         wireMockServer.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(notFound()));
 
         // when
-        Response response = given().auth().oauth2(TestTokens.valid())
-                .contentType(ContentType.JSON)
-                .body(REQUEST_BODY)
-                .post(TRANSACTIONS_ENDPOINT_PATH);
+        Response response = postTransaction();
 
         // then
         assertEquals(Status.OK.getStatusCode(), response.statusCode(), response::asString);
         TransactionResponse result = response.as(TransactionResponse.class);
         assertFalse(result.degraded());
-        assertEquals(List.of(BIN_NOT_VERIFIED_TRIGGER_CODE, HIGH_AMOUNT_TRIGGER_CODE),
-                result.triggeredRules().stream().map(TriggeredRule::rule).toList());
+        assertEquals(List.of(BIN_NOT_VERIFIED_TRIGGER_CODE, HIGH_AMOUNT_TRIGGER_CODE), ruleCodes(result));
     }
 
     @ParameterizedTest
@@ -160,10 +140,7 @@ class BinLookupFailureIntegrationTest {
         wireMockServer.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(aResponse().withStatus(upstreamStatus)));
 
         // when
-        Response response = given().auth().oauth2(TestTokens.valid())
-                .contentType(ContentType.JSON)
-                .body(REQUEST_BODY)
-                .post(TRANSACTIONS_ENDPOINT_PATH);
+        Response response = postTransaction();
 
         // then
         assertEquals(Status.BAD_GATEWAY.getStatusCode(), response.statusCode(), response::asString);
@@ -179,17 +156,24 @@ class BinLookupFailureIntegrationTest {
         wireMockServer.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(okJson(FUNDING_SOURCE_PREPAID_JSON)));
 
         // when
-        Response response = given().auth().oauth2(TestTokens.valid())
-                .contentType(ContentType.JSON)
-                .body(REQUEST_BODY)
-                .post(TRANSACTIONS_ENDPOINT_PATH);
+        Response response = postTransaction();
 
         // then
         assertEquals(Status.OK.getStatusCode(), response.statusCode(), response::asString);
         TransactionResponse result = response.as(TransactionResponse.class);
         assertFalse(result.degraded());
-        assertEquals(List.of(BIN_NOT_VERIFIED_TRIGGER_CODE, HIGH_AMOUNT_TRIGGER_CODE),
-                result.triggeredRules().stream().map(TriggeredRule::rule).toList());
+        assertEquals(List.of(BIN_NOT_VERIFIED_TRIGGER_CODE, HIGH_AMOUNT_TRIGGER_CODE), ruleCodes(result));
+    }
+
+    private static Response postTransaction() {
+        return given().auth().oauth2(TestTokens.valid())
+                .contentType(ContentType.JSON)
+                .body(REQUEST_BODY)
+                .post(TRANSACTIONS_ENDPOINT_PATH);
+    }
+
+    private static List<String> ruleCodes(TransactionResponse response) {
+        return response.triggeredRules().stream().map(TriggeredRule::rule).toList();
     }
 
 }
