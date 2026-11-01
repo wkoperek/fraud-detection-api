@@ -19,6 +19,7 @@ class RequestIdTest {
     private static final String CORRECT_REQ_BODY_JSON = "{\"bin\":\"411111\",\"amount\":1500.00,\"countryCode\":\"PL\"}";
     private static final String TOO_SHORT_BIN_REQ_BODY_EXAMPLE = "{\"bin\":\"12345\",\"amount\":1500.00,\"countryCode\":\"PL\"}";
     private static final String REQUEST_ID_HEADER = "X-REQUESTID";
+    private static final String INVALID_REQUEST_ID_HEADER = "not valid!";
 
     @Test
     void generatesRequestIdWhenHeaderIsMissing() {
@@ -80,6 +81,22 @@ class RequestIdTest {
         // then
         assertEquals(Status.BAD_REQUEST.getStatusCode(), response.statusCode());
         assertEquals(suppliedRequestId, response.as(ErrorResponse.class).requestId());
+    }
+
+    @Test
+    void replacesInvalidRequestIdWithGeneratedOne() {
+        // given
+        String body = CORRECT_REQ_BODY_JSON;
+
+        // when
+        Response response = authorizedJsonRequest().body(body).header(REQUEST_ID_HEADER, INVALID_REQUEST_ID_HEADER)
+                .post(TRANSACTIONS_ENDPOINT_PATH);
+
+        // then
+        String headerId = response.header(REQUEST_ID_HEADER);
+        assertEquals(Status.OK.getStatusCode(), response.statusCode());
+        UUID.fromString(headerId); // if requestId from header was not generated UUID.fromString will fail
+        assertEquals(headerId, response.as(TransactionResponse.class).requestId());
     }
 
     private static RequestSpecification authorizedJsonRequest() {
