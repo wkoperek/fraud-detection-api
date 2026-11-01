@@ -18,6 +18,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheName;
+import jakarta.inject.Inject;
 
 import java.util.List;
 
@@ -40,8 +43,13 @@ class BinLookupFailureIntegrationTest {
     @InjectWireMock
     WireMockServer wireMockServer;
 
+    @Inject
+    @CacheName("bin-lookup")
+    Cache binLookupCache;
+
     @BeforeEach
     void setup() {
+        binLookupCache.invalidateAll().await().indefinitely();
         wireMockServer.resetToDefaultMappings();
     }
 

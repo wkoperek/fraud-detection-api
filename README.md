@@ -142,4 +142,6 @@ docker run --rm -p 8080:8080 \
   BIN lookup returns only the card's billing currency (`billingCurrencyDefault`), which says nothing about the
   transaction currency, so it is not used. A production version would need a `currency` field in the request and a
   currency-aware service (conversion or per-currency thresholds).
-- No cache: every request calls Mastercard. No retries, rate limiting or tracing.
+- BIN lookup results (found and not found) are cached in memory, per instance, for 15 minutes (max 10000 entries).
+  Failures are never cached. Issuer data changed upstream, including newly added BINs, can be up to 15 minutes stale.
+- No retries, rate limiting or tracing.

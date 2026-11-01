@@ -16,6 +16,9 @@ import jakarta.ws.rs.core.Response.Status;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheName;
+import jakarta.inject.Inject;
 
 import java.util.List;
 
@@ -41,8 +44,13 @@ class MastercardLookupIntegrationTest {
     @InjectWireMock
     WireMockServer wireMockServer;
 
+    @Inject
+    @CacheName("bin-lookup")
+    Cache binLookupCache;
+
     @BeforeEach
     void setup() {
+        binLookupCache.invalidateAll().await().indefinitely();
         wireMockServer.resetToDefaultMappings();
     }
 

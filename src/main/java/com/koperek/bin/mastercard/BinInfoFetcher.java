@@ -10,13 +10,14 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response.Status;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import io.quarkus.cache.CacheResult;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 @ApplicationScoped
-public final class BinInfoFetcher {
+public class BinInfoFetcher {
     private static final String PREPAID = "PREPAID";
     private static final int NANO_TO_MS = 1_000_000;
     private static final String ACCOUNT_RANGE_FIELD = "accountRange";
@@ -28,6 +29,8 @@ public final class BinInfoFetcher {
         this.objectMapper = objectMapper;
     }
 
+    // Never catch failures here: a returned fallback would be cached. MastercardBinLookupService handles them.
+    @CacheResult(cacheName = "bin-lookup")
     public BinLookupResult fetch(String bin) {
         return fetchJson(bin)
                 .map(this::readBinRanges)
