@@ -71,7 +71,10 @@ Requires Java 21 and Mastercard sandbox credentials, passed as environment varia
 .\mvnw.cmd quarkus:dev
 ```
 
-The app listens on `http://localhost:8080`. To get a demo token, run `com.koperek.security.TestTokens` from the IDE (it prints one). Tokens are verified with the public key in `src/main/resources/publicKey.pem`.
+The app listens on `http://localhost:8080`. To get a demo token, run `com.koperek.security.TestTokens` from the IDE (it
+prints one). Tokens are verified with the public key in `src/main/resources/publicKey.pem`. The matching private key in
+`src/test/resources/privateKey.pem` is a committed demo key, so on a real deployment replace the public key (
+`mp.jwt.verify.publickey.location`).
 
 Tests need no credentials: `.\mvnw.cmd test`
 
@@ -97,3 +100,10 @@ docker run --rm -p 8080:8080 \
   -v /path/to/key.p12:/secrets/key.p12:ro \
   fraud-detection-api
 ```
+
+## Limitations
+
+- BINs from other networks (e.g. Visa) are not in the Mastercard sandbox, so they are scored as `BIN_NOT_VERIFIED`.
+- The sandbox returns mock data and may be unstable, so results demonstrate the integration, not real risk.
+- Rules and weights are illustrative. The amount has no currency.
+- No cache: every request calls Mastercard. No retries, rate limiting or tracing.

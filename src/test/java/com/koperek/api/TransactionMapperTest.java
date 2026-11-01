@@ -27,7 +27,7 @@ class TransactionMapperTest {
     @Test
     void mapsRequestToTransactionWithUpperCaseCountryCode() {
         // given
-        TransactionRequest request = new TransactionRequest(BIN, new BigDecimal("6000.00"), COUNTRY_CODE_PL.toUpperCase());
+        TransactionRequest request = new TransactionRequest(BIN, new BigDecimal("6000.00"), COUNTRY_CODE_PL);
 
         // when
         Transaction transaction = TransactionMapper.toTransaction(request);

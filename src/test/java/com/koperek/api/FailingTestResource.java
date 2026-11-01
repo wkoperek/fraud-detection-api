@@ -7,7 +7,7 @@ import jakarta.ws.rs.core.MediaType;
 
 @Path("/test/fail")
 @Produces(MediaType.APPLICATION_JSON)
-public class FailingResourceTest {
+public class FailingTestResource {
     private static final String FAILING_CONTROLLER_TEST_RESPONSE_ERROR = "boom";
 
     @GET

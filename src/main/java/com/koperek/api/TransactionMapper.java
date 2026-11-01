@@ -11,9 +11,9 @@ import java.util.stream.Collectors;
 public final class TransactionMapper {
     private static final int MAX_SCORE = 5;
     private static final String NO_RISK_FACTORS_DETECTED_MESSAGE = "No risk factors detected";
-    public static final String SPACE = " ";
-    private static final String DELIMITER = "; ";
     private static final String DEGRADED_MESSAGE = "BIN data was unavailable; assessment is based on transaction data only.";
+    private static final String SPACE = " ";
+    private static final String DELIMITER = "; ";
 
     public static Transaction toTransaction(TransactionRequest request) {
         return new Transaction(request.bin(), request.amount(), request.countryCode().toUpperCase());
