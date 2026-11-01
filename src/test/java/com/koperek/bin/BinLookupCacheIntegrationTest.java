@@ -48,6 +48,7 @@ class BinLookupCacheIntegrationTest {
 
     @AfterEach
     void clean() {
+        binLookupCache.invalidateAll().await().indefinitely();
         wireMockServer.resetToDefaultMappings();
     }
 

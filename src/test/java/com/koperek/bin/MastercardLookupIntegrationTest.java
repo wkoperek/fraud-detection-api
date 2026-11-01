@@ -56,6 +56,7 @@ class MastercardLookupIntegrationTest {
 
     @AfterEach
     void clean() {
+        binLookupCache.invalidateAll().await().indefinitely();
         wireMockServer.resetToDefaultMappings();
     }
 
