@@ -1,68 +1,99 @@
 # fraud-detection-api
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+Quarkus service that scores the fraud risk of a card transaction (1-5) using the Mastercard BIN Look Up sandbox and a few simple rules.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+## Endpoints
 
-## Running the application in dev mode
+### `POST /transactions`
 
-You can run your application in dev mode that enables live coding using:
+Requires a JWT (`Authorization: Bearer <token>`, RS256). Optional header `X-REQUESTID`, otherwise one is generated.
 
-```shell script
-./mvnw quarkus:dev
+Request body:
+
+```json
+{ "bin": "411111", "amount": 6000.00, "countryCode": "PL" }
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+Response (`200`):
 
-## Packaging and running the application
-
-The application can be packaged using:
-
-```shell script
-./mvnw package
+```json
+{
+  "riskScore": 4,
+  "riskLevel": "HIGH",
+  "assessment": "Risk level HIGH (4/5). Card issued in USA, transaction in POL; Amount 6000.00 is at least 5000",
+  "triggeredRules": [
+    { "rule": "COUNTRY_MISMATCH", "points": 2, "reason": "Card issued in USA, transaction in POL" },
+    { "rule": "HIGH_AMOUNT", "points": 2, "reason": "Amount 6000.00 is at least 5000" }
+  ],
+  "requestId": "0b8a3c1e-6a54-4a4b-9a58-3e0f1b1e7f10",
+  "degraded": false
+}
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+`degraded` is `true` when the BIN lookup was unavailable.
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+Errors (all except `401`, which has an empty body) share one shape. Example for `400`:
 
-If you want to build an _über-jar_, execute the following command:
-
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
+```json
+{
+  "error": "VALIDATION_FAILED",
+  "message": "Request validation failed",
+  "violations": [
+    { "field": "bin", "message": "must match \"^\\d{6,8}$\"" }
+  ],
+  "requestId": "0b8a3c1e-6a54-4a4b-9a58-3e0f1b1e7f10"
+}
 ```
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+| Status | `error` |
+|---|---|
+| `400` | `VALIDATION_FAILED` (with `violations`) or `MALFORMED_REQUEST` |
+| `401` | none (empty body, missing or invalid token) |
+| `502` | `UPSTREAM_REJECTED` (Mastercard rejected the lookup request) |
+| `500` | `INTERNAL_ERROR` |
 
-## Creating a native executable
+`violations` is `null` for everything except `VALIDATION_FAILED`.
 
-You can create a native executable using:
+### Health
 
-```shell script
-./mvnw package -Dnative
+`GET /q/health/live` and `GET /q/health/ready` (no token needed).
+
+## Run locally
+
+Requires Java 21 and Mastercard sandbox credentials, passed as environment variables (or in a `.env` file in the project root):
+
+- `MASTERCARD_CONSUMER_KEY`
+- `MASTERCARD_KEYSTORE_PATH`
+- `MASTERCARD_KEYSTORE_PASSWORD`
+- `MASTERCARD_KEY_ALIAS`
+
+```powershell
+.\mvnw.cmd quarkus:dev
 ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
+The app listens on `http://localhost:8080`. To get a demo token, run `com.koperek.security.TestTokens` from the IDE (it prints one). Tokens are verified with the public key in `src/main/resources/publicKey.pem`.
 
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
+Tests need no credentials: `.\mvnw.cmd test`
+
+## Docker
+
+Build the image (on Linux use ./mvnw instead of .\mvnw.cmd):
+
+```powershell
+.\mvnw.cmd package -DskipTests
+docker build -f src/main/docker/Dockerfile.jvm -t fraud-detection-api .
+
+
 ```
 
-You can then execute your native executable with: `./target/fraud-detection-api-1.0.0-SNAPSHOT-runner`
+Run it on the server. The credentials are passed at runtime and the keystore is mounted, nothing secret is baked into the image:
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
-
-## Related Guides
-
-- REST ([guide](https://quarkus.io/guides/rest)): Build RESTful web services and APIs using Jakarta REST (formerly JAX-RS)
-- Hibernate Validator ([guide](https://quarkus.io/guides/validation)): Bean validation using Hibernate Validator and Jakarta Validation annotations
-- REST Jackson ([guide](https://quarkus.io/guides/rest#json-serialisation)): Jackson serialization support for Quarkus REST. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it
-
-## Provided Code
-
-### REST
-
-Easily start your REST Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+```bash
+docker run --rm -p 8080:8080 \
+  -e MASTERCARD_CONSUMER_KEY=<consumer-key> \
+  -e MASTERCARD_KEY_ALIAS=<alias> \
+  -e MASTERCARD_KEYSTORE_PASSWORD=<password> \
+  -e MASTERCARD_KEYSTORE_PATH=/secrets/key.p12 \
+  -v /path/to/key.p12:/secrets/key.p12:ro \
+  fraud-detection-api
+```

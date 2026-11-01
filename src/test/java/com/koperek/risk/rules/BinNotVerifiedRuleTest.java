@@ -48,6 +48,23 @@ public class BinNotVerifiedRuleTest {
         assertTrue(result.isEmpty());
     }
 
+    @Test
+    void returnsTwoPointsWithUnavailableReasonWhenLookupUnavailable() {
+        // given
+        final BinLookupResult binLookupResult = new BinLookupResult.Unavailable();
+        final String binNumber = "411111";
+        Transaction transaction = transactionWithBin(binNumber);
+
+        // when
+        Optional<RuleResult> result = binNotVerifiedRule.evaluate(transaction, binLookupResult);
+
+        // then
+        assertTrue(result.isPresent());
+        assertEquals(BinNotVerifiedRule.NAME, result.get().rule());
+        assertEquals(2, result.get().points());
+        assertEquals("BIN lookup unavailable", result.get().reason());
+    }
+
     private Transaction transactionWithBin(String bin) {
         return new Transaction(bin, new BigDecimal("100.00"), COUNTRY_CODE_PL);
     }

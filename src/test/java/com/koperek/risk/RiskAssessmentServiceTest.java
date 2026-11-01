@@ -19,12 +19,14 @@ class RiskAssessmentServiceTest {
     private static final String COUNTRY_CODE_PL = "PL";
     private static final String COUNTRY_ALPHA_3_USA = "USA";
     private static final String LOW_AMOUNT = "50";
+    private static final String COUNTRY_ALPHA_3_DEU = "DEU";
+    private static final String COUNTRY_CODE_DE = "DE";
 
     @Test
     void returnsVeryLowWhenNoRuleTriggered() {
         // given
-        RiskAssessmentService service = serviceWithLookup(new BinLookupResult.Found(new BinInfo("DEU", false)));
-        Transaction transaction = new Transaction("222100", new BigDecimal(LOW_AMOUNT), "DE");
+        RiskAssessmentService service = serviceWithLookup(new BinLookupResult.Found(new BinInfo(COUNTRY_ALPHA_3_DEU, false)));
+        Transaction transaction = new Transaction("222100", new BigDecimal(LOW_AMOUNT), COUNTRY_CODE_DE);
 
         // when
         RiskAssessment assessment = service.assess(transaction);
@@ -72,6 +74,21 @@ class RiskAssessmentServiceTest {
         RiskAssessment assessment = service.assess(transaction);
 
         // then
+        assertEquals(RiskLevel.MEDIUM, assessment.level());
+        assertEquals(List.of(BinNotVerifiedRule.NAME), ruleNames(assessment));
+    }
+
+    @Test
+    void marksAssessmentAsDegradedWhenLookupUnavailable() {
+        // given
+        RiskAssessmentService service = serviceWithLookup(new BinLookupResult.Unavailable());
+        Transaction transaction = new Transaction("411111", new BigDecimal(LOW_AMOUNT), COUNTRY_CODE_PL);
+
+        // when
+        RiskAssessment assessment = service.assess(transaction);
+
+        // then
+        assertTrue(assessment.degraded());
         assertEquals(RiskLevel.MEDIUM, assessment.level());
         assertEquals(List.of(BinNotVerifiedRule.NAME), ruleNames(assessment));
     }
