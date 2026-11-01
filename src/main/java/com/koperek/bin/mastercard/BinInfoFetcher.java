@@ -31,6 +31,7 @@ public final class BinInfoFetcher {
     public BinLookupResult fetch(String bin) {
         return fetchJson(bin)
                 .map(this::readBinRanges)
+                .map(this::withCountry)
                 .filter(binRanges -> !binRanges.isEmpty())
                 .map(this::toFound)
                 .orElseGet(BinLookupResult.NotFound::new);
@@ -75,6 +76,12 @@ public final class BinInfoFetcher {
         } catch (JsonProcessingException e) {
             throw new InvalidUpstreamResponseException("Cannot parse bin ranges in Mastercard response", e);
         }
+    }
+
+    private List<BinRange> withCountry(List<BinRange> binRanges) {
+        return binRanges.stream()
+                .filter(range -> range != null && range.hasCountry())
+                .toList();
     }
 
     private BinLookupResult toFound(List<BinRange> binRanges) {

@@ -35,6 +35,7 @@ class BinLookupFailureIntegrationTest {
     private static final String HIGH_AMOUNT_TRIGGER_CODE = "HIGH_AMOUNT";
     private static final String UPSTREAM_REJECTED_ERROR_CODE = "UPSTREAM_REJECTED";
     private static final String X_REQUESTID_HEADER = "X-REQUESTID";
+    private static final String FUNDING_SOURCE_PREPAID_JSON = "[{\"fundingSource\":\"PREPAID\"}]";
 
     @InjectWireMock
     WireMockServer wireMockServer;
@@ -161,6 +162,25 @@ class BinLookupFailureIntegrationTest {
         assertEquals(UPSTREAM_REJECTED_ERROR_CODE, error.error());
         assertNotNull(error.requestId());
         assertEquals(error.requestId(), response.header(X_REQUESTID_HEADER));
+    }
+
+    @Test
+    void scoresAsNotVerifiedWhenUpstreamRangeHasNoCountry() {
+        // given
+        wireMockServer.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(okJson(FUNDING_SOURCE_PREPAID_JSON)));
+
+        // when
+        Response response = given().auth().oauth2(TestTokens.valid())
+                .contentType(ContentType.JSON)
+                .body(REQUEST_BODY)
+                .post(TRANSACTIONS_ENDPOINT_PATH);
+
+        // then
+        assertEquals(Status.OK.getStatusCode(), response.statusCode(), response::asString);
+        TransactionResponse result = response.as(TransactionResponse.class);
+        assertFalse(result.degraded());
+        assertEquals(List.of(BIN_NOT_VERIFIED_TRIGGER_CODE, HIGH_AMOUNT_TRIGGER_CODE),
+                result.triggeredRules().stream().map(TriggeredRule::rule).toList());
     }
 
 }
