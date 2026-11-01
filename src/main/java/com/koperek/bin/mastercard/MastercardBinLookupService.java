@@ -34,7 +34,8 @@ public class MastercardBinLookupService implements BinLookupService {
         try {
             return fetcher.fetch(bin);
         } catch (ProcessingException e) {
-            return unavailable("transport error=%s", e.getClass().getSimpleName());
+            Throwable reason = e.getCause() != null ? e.getCause() : e;
+            return unavailable("transport error=%s", reason.getClass().getSimpleName());
         } catch (WebApplicationException e) {
             int status = e.getResponse().getStatus();
             if (!isTransient(status)) {
