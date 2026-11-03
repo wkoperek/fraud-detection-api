@@ -1,5 +1,6 @@
 package com.koperek.bin.mastercard;
 
+import com.koperek.requestid.RequestIdClientFilter;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;

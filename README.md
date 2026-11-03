@@ -7,13 +7,22 @@ few simple rules.
 
 ### `POST /transactions`
 
-Requires a JWT (`Authorization: Bearer <token>`, RS256). Optional header `X-REQUESTID`, otherwise one is generated.
+Requires a JWT (`Authorization: Bearer <token>`, RS256), see [Try it](#try-it).
+
+`X-REQUESTID` is optional. A value matching regex `[A-Za-z0-9._-]{1,64}` is reused; a missing or invalid value is
+replaced
+with a new UUID. The requestid is:
+
+- returned in the `X-REQUESTID` response header on every response, including `401`
+- returned as `requestId` in the response body and in every error body
+- added to every log line of the request and to the access log
+- sent to Mastercard in the `X-REQUESTID` header of the BIN lookup call (for tracing outgoing request)
 
 Request body:
 
 ```json
 {
-  "bin": "411111",
+  "bin": "99875393",
   "amount": 6000.00,
   "countryCode": "PL"
 }
@@ -23,19 +32,24 @@ Response (`200`):
 
 ```json
 {
-  "riskScore": 4,
-  "riskLevel": "HIGH",
-  "assessment": "Risk level HIGH (4/5). Card issued in USA, transaction in POL; Amount 6000.00 is at least 5000",
+  "riskScore": 5,
+  "riskLevel": "VERY_HIGH",
+  "assessment": "Risk level VERY_HIGH (5/5). Card issued in GUY, transaction in POL; Amount 6000.00 is at least 5000; Card is prepaid!",
   "triggeredRules": [
     {
       "rule": "COUNTRY_MISMATCH",
       "points": 2,
-      "reason": "Card issued in USA, transaction in POL"
+      "reason": "Card issued in GUY, transaction in POL"
     },
     {
       "rule": "HIGH_AMOUNT",
       "points": 2,
       "reason": "Amount 6000.00 is at least 5000"
+    },
+    {
+      "rule": "PREPAID_CARD",
+      "points": 1,
+      "reason": "Card is prepaid!"
     }
   ],
   "requestId": "0b8a3c1e-6a54-4a4b-9a58-3e0f1b1e7f10",
@@ -65,8 +79,11 @@ Errors (all except `401`, which has an empty body) share one shape. Example for 
 |--------|----------------------------------------------------------------|
 | `400`  | `VALIDATION_FAILED` (with `violations`) or `MALFORMED_REQUEST` |
 | `401`  | none (empty body, missing or invalid token)                    |
-| `502`  | `UPSTREAM_REJECTED` (Mastercard rejected the lookup request)   |
+| `404`  | `NOT_FOUND` (unknown path)                                     |
+| `405`  | `METHOD_NOT_ALLOWED` (e.g. `GET /transactions`)                |
+| `415`  | `UNSUPPORTED_MEDIA_TYPE` (body is not `application/json`)      |
 | `500`  | `INTERNAL_ERROR`                                               |
+| `502`  | `UPSTREAM_REJECTED` (Mastercard rejected the lookup request)   |
 
 `violations` is `null` for everything except `VALIDATION_FAILED`.
 
@@ -103,12 +120,40 @@ root):
 .\mvnw.cmd quarkus:dev
 ```
 
-The app listens on `http://localhost:8080`. To get a demo token, run `com.koperek.security.TestTokens` from the IDE (it
-prints one). Tokens are verified with the public key in `src/main/resources/publicKey.pem`. The matching private key in
-`src/test/resources/privateKey.pem` is a committed demo key, so on a real deployment replace the public key (
-`mp.jwt.verify.publickey.location`).
+The app listens on `http://localhost:8080`. Tokens are verified with the public key in
+`src/main/resources/publicKey.pem`.
+The matching private key in `src/test/resources/privateKey.pem` is a committed demo key, so on a real deployment replace
+the public key (`mp.jwt.verify.publickey.location`).
 
 Tests need no credentials: `.\mvnw.cmd test`
+
+## Try it
+
+With the app running, open a second terminal in the project root. The first command generates a demo token (valid for
+365 days, signed with the demo private key) and the second one calls the endpoint with it.
+
+bash:
+
+```bash
+TOKEN=$(./mvnw -q test-compile exec:java -Dexec.mainClass=com.koperek.security.TestTokens -Dexec.classpathScope=test | tail -1)
+curl -i -X POST http://localhost:8080/transactions \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "X-REQUESTID: demo-123" \
+  -d '{"bin":"99875393","amount":6000.00,"countryCode":"PL"}'
+```
+
+PowerShell:
+
+```powershell
+$token = (.\mvnw.cmd -q test-compile exec:java "-Dexec.mainClass=com.koperek.security.TestTokens" "-Dexec.classpathScope=test" | Select-Object -Last 1)
+Invoke-RestMethod -Method Post http://localhost:8080/transactions `
+  -Headers @{ Authorization = "Bearer $token"; "X-REQUESTID" = "demo-123" } `
+  -ContentType "application/json" `
+  -Body '{"bin":"99875393","amount":6000.00,"countryCode":"PL"}'
+```
+
+The expected response is shown in [`POST /transactions`](#post-transactions).
 
 ## Docker
 

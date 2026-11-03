@@ -1,6 +1,7 @@
-package com.koperek.api;
+package com.koperek.requestid;
 
 import io.quarkus.vertx.http.runtime.filters.Filters;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -11,11 +12,11 @@ import java.util.regex.Pattern;
 
 @ApplicationScoped
 public class RequestIdHandler {
-    public static final String HEADER = "X-REQUESTID";
-    public static final String MDC_KEY = "requestId";
-    public static final String PROPERTY = "requestId";
-    public static final Pattern VALID_PATTERN = Pattern.compile("^[A-Za-z0-9._-]{1,64}$");
-    public static final int BEFORE_AUTHENTICATION_PRIORITY = 250;
+    static final String HEADER = "X-REQUESTID";
+    static final String MDC_KEY = "requestId";
+    static final String PROPERTY = "requestId";
+    static final Pattern VALID_PATTERN = Pattern.compile("^[A-Za-z0-9._-]{1,64}$");
+    static final int BEFORE_AUTHENTICATION_PRIORITY = SecurityHandlerPriorities.AUTHENTICATION + 1;
 
 
     void register(@Observes Filters filters) {

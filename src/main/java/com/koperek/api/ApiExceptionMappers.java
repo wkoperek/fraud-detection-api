@@ -2,6 +2,7 @@ package com.koperek.api;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.koperek.bin.UpstreamRejectedException;
+import com.koperek.requestid.CurrentRequestId;
 import io.quarkus.logging.Log;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;

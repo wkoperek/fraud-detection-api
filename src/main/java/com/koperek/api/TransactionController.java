@@ -1,5 +1,6 @@
 package com.koperek.api;
 
+import com.koperek.requestid.CurrentRequestId;
 import com.koperek.risk.RiskAssessment;
 import com.koperek.risk.RiskAssessmentService;
 import com.koperek.risk.Transaction;

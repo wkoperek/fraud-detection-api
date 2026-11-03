@@ -1,11 +1,11 @@
-package com.koperek.risk;
+package com.koperek.risk.rules;
 
 import io.smallrye.config.ConfigMapping;
 
 import java.math.BigDecimal;
 
 @ConfigMapping(prefix = "risk")
-public interface RiskConfig {
+interface RiskConfig {
     HighAmount highAmount();
 
     interface HighAmount {

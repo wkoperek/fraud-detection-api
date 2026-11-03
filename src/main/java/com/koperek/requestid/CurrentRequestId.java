@@ -1,4 +1,4 @@
-package com.koperek.api;
+package com.koperek.requestid;
 
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.RequestScoped;
@@ -11,7 +11,7 @@ public class CurrentRequestId {
         this.routingContext = routingContext;
     }
 
-    String value(){
+    public String value() {
         return routingContext.get(RequestIdHandler.PROPERTY);
     }
 }

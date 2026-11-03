@@ -12,7 +12,7 @@ public final class TransactionMapper {
     private static final int MAX_SCORE = 5;
     private static final String NO_RISK_FACTORS_DETECTED_MESSAGE = "No risk factors detected";
     private static final String DEGRADED_MESSAGE = "BIN data was unavailable; assessment is based on transaction data only.";
-    private static final String SPACE = " ";
+    private static final String SENTENCE_SEPARATOR = ". ";
     private static final String DELIMITER = "; ";
 
     public static Transaction toTransaction(TransactionRequest request) {
@@ -30,7 +30,7 @@ public final class TransactionMapper {
 
     private static String assessmentText(RiskLevel level, List<RuleResult> ruleResults, boolean degraded) {
         String text = ruleResults.isEmpty() ? NO_RISK_FACTORS_DETECTED_MESSAGE : constructResultMessage(level, joinReasons(ruleResults));
-        return degraded ? text + SPACE + DEGRADED_MESSAGE : text;
+        return degraded ? text + SENTENCE_SEPARATOR + DEGRADED_MESSAGE : text;
     }
 
     private static String joinReasons(List<RuleResult> ruleResults) {

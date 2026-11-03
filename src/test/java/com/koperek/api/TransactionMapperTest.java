@@ -81,6 +81,6 @@ class TransactionMapperTest {
 
         // then
         assertTrue(response.degraded());
-        assertEquals("Risk level MEDIUM (3/5). BIN lookup unavailable BIN data was unavailable; assessment is based on transaction data only.", response.assessment());
+        assertEquals("Risk level MEDIUM (3/5). BIN lookup unavailable. BIN data was unavailable; assessment is based on transaction data only.", response.assessment());
     }
 }
