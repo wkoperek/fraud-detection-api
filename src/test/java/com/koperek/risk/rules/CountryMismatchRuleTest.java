@@ -87,6 +87,19 @@ class CountryMismatchRuleTest {
         assertTrue(result.isEmpty());
     }
 
+    @Test
+    void returnsEmptyWhenCardCountryIsUnknown() {
+        // given
+        Transaction transaction = transactionIn(COUNTRY_CODE_PL);
+        BinLookupResult binLookupResult = cardIssuedIn(null);
+
+        // when
+        Optional<RuleResult> result = rule.evaluate(transaction, binLookupResult);
+
+        // then
+        assertTrue(result.isEmpty());
+    }
+
     private static Transaction transactionIn(String countryCode) {
         return new Transaction("411111", new BigDecimal("100.00"), countryCode);
     }

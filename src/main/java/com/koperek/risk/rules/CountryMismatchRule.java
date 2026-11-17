@@ -25,7 +25,10 @@ public final class CountryMismatchRule implements RiskRule {
     }
 
     private Optional<RuleResult> check(Transaction transaction, BinInfo binInfo) {
-        String cardCountry = binInfo.countryAlpha3().toUpperCase();
+        return binInfo.countryAlpha3().flatMap(cardCountry -> compare(transaction, cardCountry.toUpperCase()));
+    }
+
+    private Optional<RuleResult> compare(Transaction transaction, String cardCountry) {
         String transactionCountry = toAlpha3(transaction.countryCode());
 
         if (cardCountry.equals(transactionCountry)) {

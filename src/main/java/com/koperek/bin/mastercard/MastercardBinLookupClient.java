@@ -9,6 +9,8 @@ import jakarta.ws.rs.core.MediaType;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
+import java.util.List;
+
 @RegisterRestClient(configKey = "bin-lookup")
 @RegisterProvider(RequestIdClientFilter.class)
 @RegisterProvider(MastercardOAuthFilter.class)
@@ -19,5 +21,5 @@ public interface MastercardBinLookupClient {
     @Path("/account-searches")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    String search(String body);
+    List<BinRange> search(BinRangeSearchRequest request);
 }

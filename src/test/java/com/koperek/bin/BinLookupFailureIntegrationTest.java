@@ -38,7 +38,10 @@ class BinLookupFailureIntegrationTest {
     private static final String HIGH_AMOUNT_TRIGGER_CODE = "HIGH_AMOUNT";
     private static final String UPSTREAM_REJECTED_ERROR_CODE = "UPSTREAM_REJECTED";
     private static final String X_REQUESTID_HEADER = "X-REQUESTID";
+    private static final String PREPAID_CARD_TRIGGER_CODE = "PREPAID_CARD";
     private static final String FUNDING_SOURCE_PREPAID_JSON = "[{\"fundingSource\":\"PREPAID\"}]";
+    private static final String NO_COUNTRY_THEN_POLISH_DEBIT_JSON =
+            "[{\"fundingSource\":\"PREPAID\"},{\"country\":{\"alpha3\":\"POL\"},\"fundingSource\":\"DEBIT\"}]";
 
     @InjectWireMock
     WireMockServer wireMockServer;
@@ -151,7 +154,7 @@ class BinLookupFailureIntegrationTest {
     }
 
     @Test
-    void scoresAsNotVerifiedWhenUpstreamRangeHasNoCountry() {
+    void keepsFundingSourceWhenUpstreamRangeHasNoCountry() {
         // given
         wireMockServer.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(okJson(FUNDING_SOURCE_PREPAID_JSON)));
 
@@ -162,6 +165,36 @@ class BinLookupFailureIntegrationTest {
         assertEquals(Status.OK.getStatusCode(), response.statusCode(), response::asString);
         TransactionResponse result = response.as(TransactionResponse.class);
         assertFalse(result.degraded());
+        assertEquals(List.of(HIGH_AMOUNT_TRIGGER_CODE, PREPAID_CARD_TRIGGER_CODE), ruleCodes(result));
+    }
+
+    @Test
+    void prefersRangeWithCountryOverRangeWithoutOne() {
+        // given
+        wireMockServer.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(okJson(NO_COUNTRY_THEN_POLISH_DEBIT_JSON)));
+
+        // when
+        Response response = postTransaction();
+
+        // then
+        assertEquals(Status.OK.getStatusCode(), response.statusCode(), response::asString);
+        TransactionResponse result = response.as(TransactionResponse.class);
+        assertFalse(result.degraded());
+        assertEquals(List.of(HIGH_AMOUNT_TRIGGER_CODE), ruleCodes(result));
+    }
+
+    @Test
+    void degradesWhenUpstreamReturnsMalformedJson() {
+        // given
+        wireMockServer.stubFor(post(urlEqualTo(SEARCH_PATH)).willReturn(okJson("[{\"country\":")));
+
+        // when
+        Response response = postTransaction();
+
+        // then
+        assertEquals(Status.OK.getStatusCode(), response.statusCode(), response::asString);
+        TransactionResponse result = response.as(TransactionResponse.class);
+        assertTrue(result.degraded());
         assertEquals(List.of(BIN_NOT_VERIFIED_TRIGGER_CODE, HIGH_AMOUNT_TRIGGER_CODE), ruleCodes(result));
     }
 

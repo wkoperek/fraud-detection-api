@@ -1,5 +1,10 @@
 package com.koperek.bin;
 
-public record BinInfo(String countryAlpha3, boolean isPrepaid) {
+import java.util.Optional;
 
+public record BinInfo(Optional<String> countryAlpha3, boolean isPrepaid) {
+
+    public BinInfo(String countryAlpha3, boolean isPrepaid) {
+        this(Optional.ofNullable(countryAlpha3), isPrepaid);
+    }
 }

@@ -1,104 +1,98 @@
 package com.koperek.bin.mastercard;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.koperek.bin.BinInfo;
 import com.koperek.bin.BinLookupResult;
 import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response.Status;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import io.quarkus.cache.CacheResult;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @ApplicationScoped
 public class BinInfoFetcher {
     private static final String PREPAID = "PREPAID";
     private static final int NANO_TO_MS = 1_000_000;
-    private static final String ACCOUNT_RANGE_FIELD = "accountRange";
-    private final ObjectMapper objectMapper;
     private final MastercardBinLookupClient client;
 
-    public BinInfoFetcher(@RestClient MastercardBinLookupClient client, ObjectMapper objectMapper) {
+    public BinInfoFetcher(@RestClient MastercardBinLookupClient client) {
         this.client = client;
-        this.objectMapper = objectMapper;
     }
 
     // Never catch failures here: a returned fallback would be cached. MastercardBinLookupService handles them.
     @CacheResult(cacheName = "bin-lookup")
     public BinLookupResult fetch(String bin) {
-        return fetchJson(bin)
-                .map(this::readBinRanges)
-                .map(this::withCountry)
+        return fetchBinRanges(bin)
+                .map(this::withoutNulls)
                 .filter(binRanges -> !binRanges.isEmpty())
                 .map(this::toFound)
                 .orElseGet(BinLookupResult.NotFound::new);
     }
 
-    private Optional<String> fetchJson(String bin) {
+    private Optional<List<BinRange>> fetchBinRanges(String bin) {
         try {
             return Optional.ofNullable(callMastercard(bin));
         } catch (WebApplicationException e) {
+            if (e.getCause() instanceof JsonProcessingException cause) {
+                throw invalidResponse(cause);
+            }
             if (e.getResponse().getStatus() == Status.NOT_FOUND.getStatusCode()) {
                 return Optional.empty();
+            }
+            throw e;
+        } catch (ProcessingException e) {
+            if (e.getCause() instanceof JsonProcessingException cause) {
+                throw invalidResponse(cause);
             }
             throw e;
         }
     }
 
-    private String callMastercard(String bin) {
-        String body = buildRequestBody(bin);
-
+    private List<BinRange> callMastercard(String bin) {
         long start = System.nanoTime();
-        String json = client.search(body);
+        List<BinRange> binRanges = client.search(new BinRangeSearchRequest(bin));
         long durationInMs = (System.nanoTime() - start) / NANO_TO_MS;
 
-        Log.debug("raw json: " + json);
+        Log.debug("mastercard response: " + binRanges);
         Log.debug("mastercard lookup durationMs=" + durationInMs);
 
-        return json;
+        return binRanges;
     }
 
-    private String buildRequestBody(String bin) {
-        try {
-            return objectMapper.writeValueAsString(Map.of(ACCOUNT_RANGE_FIELD, bin));
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Cannot build Mastercard request body", e);
-        }
+    private static InvalidUpstreamResponseException invalidResponse(JsonProcessingException cause) {
+        return new InvalidUpstreamResponseException("Cannot parse bin ranges in Mastercard response", cause);
     }
 
-    private List<BinRange> readBinRanges(String json) {
-        try {
-            return objectMapper.readValue(json, new TypeReference<List<BinRange>>() {
-            });
-        } catch (JsonProcessingException e) {
-            throw new InvalidUpstreamResponseException("Cannot parse bin ranges in Mastercard response", e);
-        }
-    }
-
-    private List<BinRange> withCountry(List<BinRange> binRanges) {
+    private List<BinRange> withoutNulls(List<BinRange> binRanges) {
         return binRanges.stream()
-                .filter(range -> range != null && range.hasCountry())
+                .filter(Objects::nonNull)
                 .toList();
     }
 
+    // Prefers a range with a country, but keeps the funding source of a range without one.
     private BinLookupResult toFound(List<BinRange> binRanges) {
-        BinRange first = binRanges.getFirst();
+        BinRange chosen = binRanges.stream()
+                .filter(BinRange::hasCountry)
+                .findFirst()
+                .orElse(binRanges.getFirst());
 
-        if (haveDifferentCountries(binRanges, first)) {
-            Log.warn("Mastercard returned " + binRanges.size() + " bin ranges with different countries, using the first");
+        if (haveDifferentCountries(binRanges, chosen)) {
+            Log.warn("Mastercard returned " + binRanges.size() + " bin ranges with different countries, using " + chosen.countryAlpha3().orElse("none"));
         }
 
-        return new BinLookupResult.Found(new BinInfo(first.country().alpha3(), PREPAID.equalsIgnoreCase(first.fundingSource())));
+        return new BinLookupResult.Found(new BinInfo(chosen.countryAlpha3(), PREPAID.equalsIgnoreCase(chosen.fundingSource())));
     }
 
-    private boolean haveDifferentCountries(List<BinRange> binRanges, BinRange first) {
-        return binRanges.stream().anyMatch(range -> !range.country().alpha3().equals(first.country().alpha3()));
+    private boolean haveDifferentCountries(List<BinRange> binRanges, BinRange chosen) {
+        return binRanges.stream()
+                .filter(BinRange::hasCountry)
+                .anyMatch(range -> !range.countryAlpha3().equals(chosen.countryAlpha3()));
     }
 
 }
